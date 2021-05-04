@@ -109,10 +109,6 @@ def QuantizedMobileNetV1(input_shape=None,
               BN_fbits=None,
               rounding_method='nearest',
               quant_mode='hybrid',
-              ifmap_fault_dict_list=None, 
-              ofmap_fault_dict_list=None, 
-              weight_fault_dict_list=None,
-              mac_unit=None,
               overflow_mode=False,
               stop_gradient=False,
               verbose=True,
@@ -192,17 +188,8 @@ def QuantizedMobileNetV1(input_shape=None,
             
     layer_BN_quantizer=build_layer_quantizer(BN_nbits,BN_fbits,rounding_method,overflow_mode,stop_gradient)
     
-    if mac_unit is not None:
-        mac_unit.consistency_check(quant_mode,layer_quantizer)
-    
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(102)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(102)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(102)]
     if verbose:
-        pbar.set_postfix_str('Handle fault dict list')
+        pbar.set_postfix_str('Preparation')
         pbar.update()
 
 
@@ -297,10 +284,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _conv_block(img_input, 32, alpha, strides=(2, 2), 
                     layer_quantizer=layer_quantizer, 
                     layer_BN_quantizer=layer_BN_quantizer, 
-                    ifmap_fault_dict_list=ifmap_fault_dict_list[1:5],
-                    ofmap_fault_dict_list=ofmap_fault_dict_list[1:5],
-                    weight_fault_dict_list=weight_fault_dict_list[1:5],
-                    mac_unit=mac_unit,
                     quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -308,10 +291,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 64, alpha, depth_multiplier, block_id=1, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[5:12],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[5:12],
-                              weight_fault_dict_list=weight_fault_dict_list[5:12],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -321,10 +300,6 @@ def QuantizedMobileNetV1(input_shape=None,
                               strides=(2, 2), block_id=2,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[12:19],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[12:19],
-                              weight_fault_dict_list=weight_fault_dict_list[12:19],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -332,10 +307,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 128, alpha, depth_multiplier, block_id=3,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[19:26],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[19:26],
-                              weight_fault_dict_list=weight_fault_dict_list[19:26],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -345,10 +316,6 @@ def QuantizedMobileNetV1(input_shape=None,
                               strides=(2, 2), block_id=4,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[26:33],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[26:33],
-                              weight_fault_dict_list=weight_fault_dict_list[26:33],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -356,10 +323,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 256, alpha, depth_multiplier, block_id=5,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[33:40],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[33:40],
-                              weight_fault_dict_list=weight_fault_dict_list[33:40],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -369,10 +332,6 @@ def QuantizedMobileNetV1(input_shape=None,
                               strides=(2, 2), block_id=6,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[40:47],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[40:47],
-                              weight_fault_dict_list=weight_fault_dict_list[40:47],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -380,10 +339,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=7, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[47:54],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[47:54],
-                              weight_fault_dict_list=weight_fault_dict_list[47:54],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -391,10 +346,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=8, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[54:61],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[54:61],
-                              weight_fault_dict_list=weight_fault_dict_list[54:61],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -402,10 +353,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=9, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[61:68],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[61:68],
-                              weight_fault_dict_list=weight_fault_dict_list[61:68],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -413,10 +360,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=10, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[68:75],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[68:75],
-                              weight_fault_dict_list=weight_fault_dict_list[68:75],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -424,10 +367,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=11, 
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[75:82],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[75:82],
-                              weight_fault_dict_list=weight_fault_dict_list[75:82],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -437,10 +376,6 @@ def QuantizedMobileNetV1(input_shape=None,
                               strides=(2, 2), block_id=12,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[82:89],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[82:89],
-                              weight_fault_dict_list=weight_fault_dict_list[82:89],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -448,10 +383,6 @@ def QuantizedMobileNetV1(input_shape=None,
     x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier, block_id=13,
                               layer_quantizer=layer_quantizer, 
                               layer_BN_quantizer=layer_BN_quantizer, 
-                              ifmap_fault_dict_list=ifmap_fault_dict_list[89:96],
-                              ofmap_fault_dict_list=ofmap_fault_dict_list[89:96],
-                              weight_fault_dict_list=weight_fault_dict_list[89:96],
-                              mac_unit=mac_unit,
                               quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -471,10 +402,6 @@ def QuantizedMobileNetV1(input_shape=None,
                             quantizers=layer_quantizer,
                             padding='same',
                             name='conv_preds',
-                            ifmap_sa_fault_injection=ifmap_fault_dict_list[99],
-                            ofmap_sa_fault_injection=ofmap_fault_dict_list[99],
-                            weight_sa_fault_injection=weight_fault_dict_list[99],
-                            mac_unit=mac_unit,
                             quant_mode=quant_mode,
                             last_layer=True)(x)
         x = layers.Activation('softmax', name='act_softmax')(x)
@@ -544,11 +471,7 @@ def _conv_block(inputs,
                 strides=(1, 1), 
                 layer_quantizer=quantizer(16,8), 
                 layer_BN_quantizer=quantizer(16,8), 
-                quant_mode='hybrid',
-                ifmap_fault_dict_list=None, 
-                ofmap_fault_dict_list=None, 
-                weight_fault_dict_list=None,
-                mac_unit=None):
+                quant_mode='hybrid'):
     """Adds an initial convolution layer (with batch normalization and relu6).
 
     # Arguments
@@ -599,14 +522,7 @@ def _conv_block(inputs,
     """
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
     filters = int(filters * alpha)
-    
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(4)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(4)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(4)]
-    
+        
     x = layers.ZeroPadding2D(padding=(1, 1), name='conv1_pad')(inputs)
     x = QuantizedConv2D(filters, 
                         kernel_size=kernel,
@@ -615,17 +531,10 @@ def _conv_block(inputs,
                         use_bias=False,
                         strides=strides,
                         name='conv1', 
-                        ifmap_sa_fault_injection=ifmap_fault_dict_list[1],
-                        ofmap_sa_fault_injection=ofmap_fault_dict_list[1],
-                        weight_sa_fault_injection=weight_fault_dict_list[1],
-                        mac_unit=mac_unit,
                         quant_mode=quant_mode)(x)
     x = QuantizedBatchNormalization(quantizers=layer_BN_quantizer,
                                     axis=channel_axis, 
                                     name='conv1_bn', 
-                                    ifmap_sa_fault_injection=ifmap_fault_dict_list[2],
-                                    ofmap_sa_fault_injection=ofmap_fault_dict_list[2],
-                                    weight_sa_fault_injection=weight_fault_dict_list[2],
                                     quant_mode=quant_mode)(x)
     return layers.ReLU(6., name='conv1_relu')(x)
 
@@ -638,11 +547,7 @@ def _depthwise_conv_block(inputs,
                           block_id=1,
                           layer_quantizer=quantizer(16,8), 
                           layer_BN_quantizer=quantizer(16,8), 
-                          quant_mode='hybrid',
-                          ifmap_fault_dict_list=None, 
-                          ofmap_fault_dict_list=None, 
-                          weight_fault_dict_list=None,
-                          mac_unit=None):
+                          quant_mode='hybrid'):
     """Adds a depthwise convolution block.
 
     A depthwise convolution block consists of a depthwise conv,
@@ -697,12 +602,6 @@ def _depthwise_conv_block(inputs,
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
     pointwise_conv_filters = int(pointwise_conv_filters * alpha)
     
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(7)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(7)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(7)]
 
     x = layers.ZeroPadding2D((1, 1), name='conv_pad_%d' % block_id)(inputs)
     x = QuantizedDepthwiseConv2D(kernel_size=(3, 3),
@@ -712,17 +611,10 @@ def _depthwise_conv_block(inputs,
                                  strides=strides,
                                  use_bias=False,
                                  name='conv_dw_%d' % block_id, 
-                                 ifmap_sa_fault_injection=ifmap_fault_dict_list[1],
-                                 ofmap_sa_fault_injection=ofmap_fault_dict_list[1],
-                                 weight_sa_fault_injection=weight_fault_dict_list[1],
-                                 mac_unit=mac_unit,
                                  quant_mode=quant_mode)(x)
     x = QuantizedBatchNormalization(quantizers=layer_BN_quantizer,
                                     axis=channel_axis, 
                                     name='conv_dw_%d_bn' % block_id, 
-                                    ifmap_sa_fault_injection=ifmap_fault_dict_list[2],
-                                    ofmap_sa_fault_injection=ofmap_fault_dict_list[2],
-                                    weight_sa_fault_injection=weight_fault_dict_list[2],
                                     quant_mode=quant_mode)(x)
     x = layers.ReLU(6., name='conv_dw_%d_relu' % block_id)(x)
 
@@ -733,17 +625,10 @@ def _depthwise_conv_block(inputs,
                         use_bias=False,
                         strides=(1, 1),
                         name='conv_pw_%d' % block_id, 
-                        ifmap_sa_fault_injection=ifmap_fault_dict_list[4],
-                        ofmap_sa_fault_injection=ofmap_fault_dict_list[4],
-                        weight_sa_fault_injection=weight_fault_dict_list[4],
-                        mac_unit=mac_unit,
                         quant_mode=quant_mode)(x)
     x = QuantizedBatchNormalization(quantizers=layer_BN_quantizer,
                                     axis=channel_axis,
                                     name='conv_pw_%d_bn' % block_id, 
-                                    ifmap_sa_fault_injection=ifmap_fault_dict_list[5],
-                                    ofmap_sa_fault_injection=ofmap_fault_dict_list[5],
-                                    weight_sa_fault_injection=weight_fault_dict_list[5],
                                     quant_mode=quant_mode)(x)
     return layers.ReLU(6., name='conv_pw_%d_relu' % block_id)(x)
 
@@ -769,10 +654,6 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
               fbits=8, 
               rounding_method='nearest',
               quant_mode='hybrid',
-              ifmap_fault_dict_list=None, 
-              ofmap_fault_dict_list=None, 
-              weight_fault_dict_list=None,
-              mac_unit=None,
               overflow_mode=False,
               stop_gradient=False,
               verbose=True,
@@ -842,17 +723,8 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
         pbar=tqdm(total=16)
     
     layer_quantizer=build_layer_quantizer(nbits,fbits,rounding_method,overflow_mode,stop_gradient)
-    if mac_unit is not None:
-        mac_unit.consistency_check(quant_mode,layer_quantizer)
-    
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(75)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(75)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(75)]
     if verbose:
-        pbar.set_postfix_str('Handle fault dict list')
+        pbar.set_postfix_str('Preparation')
         pbar.update()
 
     if not os.path.exists(weights):
@@ -942,20 +814,12 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
         pbar.set_postfix_str('building standard conv block')
     x = _conv_block_fused_BN(img_input, 32, alpha, strides=(2, 2), 
                              layer_quantizer=layer_quantizer, 
-                             ifmap_fault_dict_list=ifmap_fault_dict_list[1:4],
-                             ofmap_fault_dict_list=ofmap_fault_dict_list[1:4],
-                             weight_fault_dict_list=weight_fault_dict_list[1:4],
-                             mac_unit=mac_unit,
                              quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 1')
     x = _depthwise_conv_block_fused_BN(x, 64, alpha, depth_multiplier, block_id=1, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[4:9],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[4:9],
-                                       weight_fault_dict_list=weight_fault_dict_list[4:9],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -964,20 +828,12 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
     x = _depthwise_conv_block_fused_BN(x, 128, alpha, depth_multiplier,
                                        strides=(2, 2), block_id=2,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[9:14],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[9:14],
-                                       weight_fault_dict_list=weight_fault_dict_list[9:14],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 3')
     x = _depthwise_conv_block_fused_BN(x, 128, alpha, depth_multiplier, block_id=3,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[14:19],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[14:19],
-                                       weight_fault_dict_list=weight_fault_dict_list[14:19],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -986,20 +842,12 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
     x = _depthwise_conv_block_fused_BN(x, 256, alpha, depth_multiplier,
                                        strides=(2, 2), block_id=4,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[19:24],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[19:24],
-                                       weight_fault_dict_list=weight_fault_dict_list[19:24],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 5')
     x = _depthwise_conv_block_fused_BN(x, 256, alpha, depth_multiplier, block_id=5,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[24:29],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[24:29],
-                                       weight_fault_dict_list=weight_fault_dict_list[24:29],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -1008,60 +856,36 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier,
                                        strides=(2, 2), block_id=6,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[29:34],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[29:34],
-                                       weight_fault_dict_list=weight_fault_dict_list[29:34],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 7')
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier, block_id=7, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[34:39],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[34:39],
-                                       weight_fault_dict_list=weight_fault_dict_list[34:39],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 8')
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier, block_id=8, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[39:44],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[39:44],
-                                       weight_fault_dict_list=weight_fault_dict_list[39:44],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 9')
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier, block_id=9, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[44:49],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[44:49],
-                                       weight_fault_dict_list=weight_fault_dict_list[44:49],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 10')
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier, block_id=10, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[49:54],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[49:54],
-                                       weight_fault_dict_list=weight_fault_dict_list[49:54],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 11')
     x = _depthwise_conv_block_fused_BN(x, 512, alpha, depth_multiplier, block_id=11, 
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[54:59],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[54:59],
-                                       weight_fault_dict_list=weight_fault_dict_list[54:59],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -1070,20 +894,12 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
     x = _depthwise_conv_block_fused_BN(x, 1024, alpha, depth_multiplier,
                                        strides=(2, 2), block_id=12,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[59:64],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[59:64],
-                                       weight_fault_dict_list=weight_fault_dict_list[59:64],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
         pbar.set_postfix_str('building depthwise conv block 13')
     x = _depthwise_conv_block_fused_BN(x, 1024, alpha, depth_multiplier, block_id=13,
                                        layer_quantizer=layer_quantizer, 
-                                       ifmap_fault_dict_list=ifmap_fault_dict_list[64:69],
-                                       ofmap_fault_dict_list=ofmap_fault_dict_list[64:69],
-                                       weight_fault_dict_list=weight_fault_dict_list[64:69],
-                                       mac_unit=mac_unit,
                                        quant_mode=quant_mode)
     if verbose:
         pbar.update()
@@ -1103,10 +919,6 @@ def QuantizedMobileNetV1FusedBN(input_shape=None,
                             quantizers=layer_quantizer,
                             padding='same',
                             name='conv_preds',
-                            ifmap_sa_fault_injection=ifmap_fault_dict_list[72],
-                            ofmap_sa_fault_injection=ofmap_fault_dict_list[72],
-                            weight_sa_fault_injection=weight_fault_dict_list[72],
-                            mac_unit=mac_unit,
                             quant_mode=quant_mode,
                             last_layer=True)(x)
         x = layers.Activation('softmax', name='act_softmax')(x)
@@ -1148,11 +960,7 @@ def _conv_block_fused_BN(inputs,
                          kernel=(3, 3), 
                          strides=(1, 1),
                          layer_quantizer=quantizer(16,8), 
-                         quant_mode='hybrid',
-                         ifmap_fault_dict_list=None, 
-                         ofmap_fault_dict_list=None, 
-                         weight_fault_dict_list=None,
-                         mac_unit=None):
+                         quant_mode='hybrid'):
     """Adds an initial convolution layer (with batch normalization and relu6).
 
     # Arguments
@@ -1203,14 +1011,7 @@ def _conv_block_fused_BN(inputs,
     """
     #channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
     filters = int(filters * alpha)
-    
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(3)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(3)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(3)]
-    
+        
     x = layers.ZeroPadding2D(padding=(1, 1), name='conv1_pad')(inputs)
     x = QuantizedConv2D(filters, 
                         kernel_size=kernel,
@@ -1218,10 +1019,6 @@ def _conv_block_fused_BN(inputs,
                         padding='valid',
                         strides=strides,
                         name='conv1', 
-                        ifmap_sa_fault_injection=ifmap_fault_dict_list[1],
-                        ofmap_sa_fault_injection=ofmap_fault_dict_list[1],
-                        weight_sa_fault_injection=weight_fault_dict_list[1],
-                        mac_unit=mac_unit,
                         quant_mode=quant_mode)(x)
     return layers.ReLU(6., name='conv1_relu')(x)
 
@@ -1233,11 +1030,7 @@ def _depthwise_conv_block_fused_BN(inputs,
                                    strides=(1, 1), 
                                    block_id=1,
                                    layer_quantizer=quantizer(16,8), 
-                                   quant_mode='hybrid',
-                                   ifmap_fault_dict_list=None, 
-                                   ofmap_fault_dict_list=None, 
-                                   weight_fault_dict_list=None,
-                                   mac_unit=None):
+                                   quant_mode='hybrid'):
     """Adds a depthwise convolution block.
 
     A depthwise convolution block consists of a depthwise conv,
@@ -1292,12 +1085,6 @@ def _depthwise_conv_block_fused_BN(inputs,
     #channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
     pointwise_conv_filters = int(pointwise_conv_filters * alpha)
     
-    if ifmap_fault_dict_list is None:
-        ifmap_fault_dict_list=[None for _ in range(5)]
-    if ofmap_fault_dict_list is None:
-        ofmap_fault_dict_list=[None for _ in range(5)]
-    if weight_fault_dict_list is None:
-        weight_fault_dict_list=[[None,None] for _ in range(5)]
 
     x = layers.ZeroPadding2D((1, 1), name='conv_pad_%d' % block_id)(inputs)
     x = QuantizedDepthwiseConv2D(kernel_size=(3, 3),
@@ -1306,10 +1093,6 @@ def _depthwise_conv_block_fused_BN(inputs,
                                  depth_multiplier=depth_multiplier,
                                  strides=strides,
                                  name='conv_dw_%d' % block_id, 
-                                 ifmap_sa_fault_injection=ifmap_fault_dict_list[1],
-                                 ofmap_sa_fault_injection=ofmap_fault_dict_list[1],
-                                 weight_sa_fault_injection=weight_fault_dict_list[1],
-                                 mac_unit=mac_unit,
                                  quant_mode=quant_mode)(x)
     x = layers.ReLU(6., name='conv_dw_%d_relu' % block_id)(x)
 
@@ -1319,10 +1102,6 @@ def _depthwise_conv_block_fused_BN(inputs,
                         padding='same',
                         strides=(1, 1),
                         name='conv_pw_%d' % block_id, 
-                        ifmap_sa_fault_injection=ifmap_fault_dict_list[3],
-                        ofmap_sa_fault_injection=ofmap_fault_dict_list[3],
-                        weight_sa_fault_injection=weight_fault_dict_list[3],
-                        mac_unit=mac_unit,
                         quant_mode=quant_mode)(x)
     return layers.ReLU(6., name='conv_pw_%d_relu' % block_id)(x)
 

@@ -18,8 +18,6 @@ from tensorflow.keras import initializers
 from tensorflow.python.keras.utils import conv_utils
 
 from .quantized_ops import quantizer
-from ..fault.fault_ops import inject_layer_sa_fault_tensor
-from ..fault.fault_mac import mac_fault_injector
 from .intra_layer_ops import QuantizedDenseCore, QuantizedConv2DCore, QuantizedBatchNormalizationCore, QuantizedDepthwiseConv2DCore, DistributedConv2D, QuantizedDistributedConv2DCore
 
 
@@ -45,15 +43,10 @@ class Clip(constraints.Constraint):
 class QuantizedDense(Dense):
     ''' Quantized Dense layer '''
     def __init__(self, units, quantizers, quant_mode='hybrid',
-                 ifmap_sa_fault_injection=None, ofmap_sa_fault_injection=None, weight_sa_fault_injection=[None, None],
-                 mac_unit=None, last_layer=False, **kwargs):
+                 last_layer=False, **kwargs):
         super(QuantizedDense, self).__init__(units, **kwargs)
         self.quantizer=quantizers
         self.quant_mode = quant_mode
-        self.weight_sa_fault_injection=weight_sa_fault_injection
-        self.ifmap_sa_fault_injection=ifmap_sa_fault_injection
-        self.ofmap_sa_fault_injection=ofmap_sa_fault_injection
-        self.mac_unit=mac_unit
         self.last_layer=last_layer
         super(QuantizedDense, self).__init__(units, **kwargs)
     
@@ -97,15 +90,9 @@ class QuantizedDense(Dense):
         # quantize kernel
         if self.quant_mode in ['hybrid','intrinsic']:
             quantized_kernel = quantizer_weight.quantize(self.kernel)
-        # kernel SA fault injection
-        if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic']:
-            quantized_kernel = inject_layer_sa_fault_tensor(quantized_kernel, self.weight_sa_fault_injection[0], quantizer_weight)
         # quantize input
         if self.quant_mode in ['hybrid','intrinsic']:
             inputs = quantizer_input.quantize(inputs)
-        # input SA fault injection
-        if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-            inputs = inject_layer_sa_fault_tensor(inputs, self.ifmap_sa_fault_injection, quantizer_input)
         
         # fully-connected layer call
         if self.quant_mode == 'intrinsic':
@@ -120,32 +107,19 @@ class QuantizedDense(Dense):
         if self.use_bias:
             if self.quant_mode in ['hybrid','intrinsic']:
                 quantized_bias = quantizer_weight.quantize(self.bias)
-            
-            if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                quantized_bias = inject_layer_sa_fault_tensor(quantized_bias, self.weight_sa_fault_injection[1], quantizer_weight)
-                
-            if self.quant_mode in ['hybrid','intrinsic']:
+                            
                 output = K.bias_add(output, quantized_bias)
                 output = quantizer_output.quantize(output)
+                
             elif self.quant_mode in ['extrinsic',None]:
                 output = K.bias_add(output, self.bias)
         
-        # output mac fault injection
-        if self.mac_unit is not None:
-            if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-                output = mac_fault_injector(self.mac_unit)(output, fault_dict=self.ofmap_sa_fault_injection, 
-                                                           ifmap=inputs, wght=quantized_kernel, 
-                                                           layer_type='Dense')
         # activation function
         if self.activation is not None:
             output = self.activation(output)
         # quantize output
         if self.quant_mode in ['extrinsic','hybrid','intrinsic'] and not self.last_layer:
             output = quantizer_output.quantize(output)
-        # output SA fault injection 
-        if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-            if self.mac_unit is None:
-                output = inject_layer_sa_fault_tensor(output, self.ofmap_sa_fault_injection, quantizer_output)
 
         return output
 
@@ -171,15 +145,10 @@ class QuantizedDense(Dense):
 class QuantizedConv2D(Conv2D):
     '''Quantized Convolution2D layer '''
     def __init__(self, filters, quantizers, quant_mode='hybrid',
-                 ifmap_sa_fault_injection=None, ofmap_sa_fault_injection=None, weight_sa_fault_injection=[None, None],
-                 mac_unit=None, last_layer=False, **kwargs):
+                 last_layer=False, **kwargs):
         super(QuantizedConv2D, self).__init__(filters, **kwargs)
         self.quantizer=quantizers
         self.quant_mode = quant_mode
-        self.weight_sa_fault_injection=weight_sa_fault_injection
-        self.ifmap_sa_fault_injection=ifmap_sa_fault_injection
-        self.ofmap_sa_fault_injection=ofmap_sa_fault_injection
-        self.mac_unit=mac_unit
         self.last_layer=last_layer
         
     def build(self, input_shape):
@@ -231,15 +200,9 @@ class QuantizedConv2D(Conv2D):
         # quantize kernel
         if self.quant_mode in ['hybrid','intrinsic']:
             quantized_kernel = quantizer_weight.quantize(self.kernel)
-        # kernel SA fault injection
-        if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic']:
-            quantized_kernel = inject_layer_sa_fault_tensor(quantized_kernel, self.weight_sa_fault_injection[0], quantizer_weight)
         # quantize input
         if self.quant_mode in ['hybrid','intrinsic']:
             inputs = quantizer_input.quantize(inputs)
-        # input SA fault injection
-        if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-            inputs = inject_layer_sa_fault_tensor(inputs, self.ifmap_sa_fault_injection, quantizer_input)
 
         # convolution 2D layer call
         if self.quant_mode == 'intrinsic':
@@ -274,11 +237,6 @@ class QuantizedConv2D(Conv2D):
         if self.use_bias:
             if self.quant_mode in ['hybrid','intrinsic']:
                 quantized_bias = quantizer_weight.quantize(self.bias)
-            
-            if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                quantized_bias = inject_layer_sa_fault_tensor(quantized_bias, self.weight_sa_fault_injection[1], quantizer_weight)
-
-            if self.quant_mode in ['hybrid','intrinsic']:
                 outputs = K.bias_add(
                         outputs,
                         quantized_bias,
@@ -290,25 +248,12 @@ class QuantizedConv2D(Conv2D):
                         self.bias,
                         data_format=self.data_format)  
 
-        # output mac fault injection
-        if self.mac_unit is not None:
-            if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-                outputs = mac_fault_injector(self.mac_unit)(outputs, fault_dict=self.ofmap_sa_fault_injection, 
-                                                            ifmap=inputs, wght=quantized_kernel,      
-                                                            layer_type='Conv2D',
-                                                            ksizes=self.kernel_size, 
-                                                            padding=self.padding, 
-                                                            dilation_rates=self.dilation_rate)
         # activation function
         if self.activation is not None:
             outputs = self.activation(outputs)
         # quantize output
         if self.quant_mode in ['extrinsic','hybrid','intrinsic'] and not self.last_layer:
             outputs = quantizer_output.quantize(outputs)
-        # output SA fault injection 
-        if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-            if self.mac_unit is None:
-                outputs = inject_layer_sa_fault_tensor(outputs, self.ofmap_sa_fault_injection, quantizer_output)
 
         return outputs
 
@@ -338,17 +283,10 @@ QuantizedConvolution2D = QuantizedConv2D
 
 class QuantizedBatchNormalization(BatchNormalization):
     ''' Quantized BatchNormalization layer '''
-    def __init__(self, quantizers, quant_mode='hybrid',
-                 ifmap_sa_fault_injection=None, ofmap_sa_fault_injection=None, weight_sa_fault_injection=[None, None, None, None],**kwargs):
+    def __init__(self, quantizers, quant_mode='hybrid', **kwargs):
         super(QuantizedBatchNormalization, self).__init__(**kwargs)
         self.quantizer=quantizers
         self.quant_mode = quant_mode
-        if (isinstance(weight_sa_fault_injection,list) and len(weight_sa_fault_injection)==2) or weight_sa_fault_injection is None:
-            self.weight_sa_fault_injection=[None, None, None, None]
-        else:            
-            self.weight_sa_fault_injection=weight_sa_fault_injection
-        self.ifmap_sa_fault_injection=ifmap_sa_fault_injection
-        self.ofmap_sa_fault_injection=ofmap_sa_fault_injection
 
 
     def build(self, input_shape):
@@ -439,26 +377,11 @@ class QuantizedBatchNormalization(BatchNormalization):
                         broadcast_beta = quantizer_weight.quantize(broadcast_beta)
                     if self.scale:
                         broadcast_gamma = quantizer_weight.quantize(broadcast_gamma)
-                        
-                if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.scale:
-                    broadcast_gamma = inject_layer_sa_fault_tensor(broadcast_gamma, self.weight_sa_fault_injection[0], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.center:
-                    broadcast_beta = inject_layer_sa_fault_tensor(broadcast_beta, self.weight_sa_fault_injection[1], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[2] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                    broadcast_moving_mean = inject_layer_sa_fault_tensor(broadcast_moving_mean, self.weight_sa_fault_injection[2], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[3] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.scale:
-                    broadcast_moving_variance = inject_layer_sa_fault_tensor(broadcast_moving_variance, self.weight_sa_fault_injection[3], quantizer_weight)
-                    
+                                            
                     
                 if self.quant_mode in ['hybrid','intrinsic']:
                     quantized_inputs = quantizer_input.quantize(inputs)
                     
-                if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-                    quantized_inputs = inject_layer_sa_fault_tensor(quantized_inputs, self.ifmap_sa_fault_injection, quantizer_input)
-
                 
                 if self.quant_mode == 'intrinsic':
                     return QuantizedBatchNormalizationCore(
@@ -512,25 +435,10 @@ class QuantizedBatchNormalization(BatchNormalization):
                     else:
                         gamma = self.gamma
                         
-                if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.scale:
-                    gamma = inject_layer_sa_fault_tensor(gamma, self.weight_sa_fault_injection[0], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.center:
-                    beta = inject_layer_sa_fault_tensor(beta, self.weight_sa_fault_injection[1], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[2] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                    moving_mean = inject_layer_sa_fault_tensor(moving_mean, self.weight_sa_fault_injection[2], quantizer_weight)
-                    
-                if self.weight_sa_fault_injection[3] is not None and self.quant_mode in ['hybrid','intrinsic'] and self.scale:
-                    moving_variance = inject_layer_sa_fault_tensor(moving_variance, self.weight_sa_fault_injection[3], quantizer_weight)
-                    
                     
                 if self.quant_mode in ['hybrid','intrinsic']:
                     quantized_inputs = quantizer_input.quantize(inputs)
                     
-                if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-                    quantized_inputs = inject_layer_sa_fault_tensor(quantized_inputs, self.ifmap_sa_fault_injection, quantizer_input)
-
                 
                 if self.quant_mode == 'intrinsic':
                     return QuantizedBatchNormalizationCore(
@@ -576,10 +484,7 @@ class QuantizedBatchNormalization(BatchNormalization):
 
         # If the learning phase is *static* and set to inference:
         if not training:
-            if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-                return inject_layer_sa_fault_tensor(normalize_inference(), self.ofmap_sa_fault_injection, quantizer_output)
-            else:
-                return normalize_inference()
+            return normalize_inference()
 
         # If the learning is either dynamic, or set to training:
         normed_training, mean, variance = K.normalize_batch_in_training(
@@ -632,19 +537,11 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
                  kernel_size,
                  quantizers,
                  quant_mode='hybrid',
-                 ifmap_sa_fault_injection=None, 
-                 ofmap_sa_fault_injection=None, 
-                 weight_sa_fault_injection=[None, None],
-                 mac_unit=None, 
                  last_layer=False,
                  **kwargs):
         super(QuantizedDepthwiseConv2D, self).__init__(kernel_size, **kwargs)
         self.quantizer=quantizers
         self.quant_mode = quant_mode
-        self.weight_sa_fault_injection=weight_sa_fault_injection
-        self.ifmap_sa_fault_injection=ifmap_sa_fault_injection
-        self.ofmap_sa_fault_injection=ofmap_sa_fault_injection
-        self.mac_unit=mac_unit
         self.last_layer=last_layer
 
     def build(self, input_shape):
@@ -701,15 +598,9 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
         # quantize kernel
         if self.quant_mode in ['hybrid','intrinsic']:
             inputs = quantizer_input.quantize(inputs)
-        # kernel SA fault injection
-        if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-            inputs = inject_layer_sa_fault_tensor(inputs, self.ifmap_sa_fault_injection, quantizer_input)
         # quantize input
         if self.quant_mode in ['hybrid','intrinsic']:
             quantized_depthwise_kernel=quantizer_weight.quantize(self.depthwise_kernel)
-        # input SA fault injection
-        if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic']:
-            quantized_depthwise_kernel= inject_layer_sa_fault_tensor(quantized_depthwise_kernel, self.weight_sa_fault_injection[0], quantizer_weight)
 
         # depthwise convolution 2D layer call
         if self.quant_mode == 'intrinsic':
@@ -745,10 +636,6 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
             if self.quant_mode in ['hybrid','intrinsic']:
                 quantized_bias = quantizer_weight.quantize(self.bias)
             
-            if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                quantized_bias = inject_layer_sa_fault_tensor(quantized_bias, self.weight_sa_fault_injection[1], quantizer_weight)
-
-            if self.quant_mode in ['hybrid','intrinsic']:
                 outputs = K.bias_add(
                     outputs,
                     quantized_bias,
@@ -760,25 +647,12 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
                         self.bias,
                         data_format=self.data_format)  
 
-        # output mac fault injection
-        if self.mac_unit is not None:
-            if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-                outputs = mac_fault_injector(self.mac_unit)(outputs, fault_dict=self.ofmap_sa_fault_injection, 
-                                                            ifmap=inputs, wght=quantized_depthwise_kernel, 
-                                                            layer_type='DepthwiseConv2D',
-                                                            ksizes=self.kernel_size, 
-                                                            padding=self.padding, 
-                                                            dilation_rates=self.dilation_rate)
         # activation function
         if self.activation is not None:
             outputs = self.activation(outputs)
         # quantize output
         if self.quant_mode in ['extrinsic','hybrid','intrinsic']:
             outputs = quantizer_output.quantize(outputs)
-        # output SA fault injection 
-        if self.ofmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic'] and not self.last_layer:
-            if self.mac_unit is None:
-                outputs = inject_layer_sa_fault_tensor(outputs, self.ofmap_sa_fault_injection, quantizer_output)
 
         return outputs
 
@@ -836,16 +710,12 @@ class QuantizedDistributedConv2D(Conv2D):
     # where its input feature map channel is too many for input buffer. Divide the convolution
     # into several parallel convolutions to view the partial sum value and inject fault.
 
-    def __init__(self, filters, split_type, splits, quantizers, quant_mode='hybrid',
-                 ifmap_sa_fault_injection=None, ofmap_sa_fault_injection=None, weight_sa_fault_injection=[None, None],**kwargs):
+    def __init__(self, filters, split_type, splits, quantizers, quant_mode='hybrid', **kwargs):
         super(QuantizedDistributedConv2D, self).__init__(filters, **kwargs)
         self.split_type = split_type
         self.splits = splits
         self.quantizer=quantizers
         self.quant_mode = quant_mode
-        self.weight_sa_fault_injection=weight_sa_fault_injection
-        self.ifmap_sa_fault_injection=ifmap_sa_fault_injection
-        self.ofmap_sa_fault_injection=ofmap_sa_fault_injection
         
     def build(self, input_shape):
         if self.data_format == 'channels_first':
@@ -896,15 +766,9 @@ class QuantizedDistributedConv2D(Conv2D):
         if self.quant_mode in ['hybrid','intrinsic']:
             quantized_kernel = quantizer_weight.quantize(self.kernel)
         
-        if self.weight_sa_fault_injection[0] is not None and self.quant_mode in ['hybrid','intrinsic']:
-            quantized_kernel = inject_layer_sa_fault_tensor(quantized_kernel, self.weight_sa_fault_injection[0], quantizer_weight)
-
         if self.quant_mode in ['hybrid','intrinsic']:
             inputs = quantizer_input.quantize(inputs)
         
-        if self.ifmap_sa_fault_injection is not None and self.quant_mode in ['hybrid','intrinsic']:
-            inputs = inject_layer_sa_fault_tensor(inputs, self.ifmap_sa_fault_injection, quantizer_input)
-
 
         if self.quant_mode == 'intrinsic':
             strides = (1,self.strides[0],self.strides[1],1)
@@ -946,9 +810,6 @@ class QuantizedDistributedConv2D(Conv2D):
             if self.quant_mode in ['hybrid','intrinsic']:
                 quantized_bias = quantizer_weight.quantize(self.bias)
             
-            if self.weight_sa_fault_injection[1] is not None and self.quant_mode in ['hybrid','intrinsic']:
-                quantized_bias = inject_layer_sa_fault_tensor(quantized_bias, self.weight_sa_fault_injection[1], quantizer_weight)
-
             if self.quant_mode in ['hybrid','intrinsic']:
                 outputs[0] = K.bias_add(
                         outputs[0],
@@ -974,9 +835,6 @@ class QuantizedDistributedConv2D(Conv2D):
             if not isinstance(self.ofmap_sa_fault_injection,list) or len(outputs) is not len(self.ofmap_sa_fault_injection):
                 raise ValueError('The output has %d sub-group, but output fault list got %d item can\'t match.'%(len(outputs),len(self.ofmap_sa_fault_injection)))
                 
-            for i in range(len(outputs)):
-                outputs[i] = inject_layer_sa_fault_tensor(outputs[i], self.ofmap_sa_fault_injection[i], quantizer_output)
-
 
         return outputs
     

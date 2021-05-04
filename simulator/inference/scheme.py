@@ -13,8 +13,6 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.utils import to_categorical #TODO new multi gpu task
 from ..utils_tool.weight_conversion import convert_original_weight_layer_name
 from ..utils_tool.dataset_setup import dataset_setup
-from .evaluate import evaluate_FT
-from ..fault.fault_list import generate_model_stuck_fault
 import time
 import numpy as np
 
@@ -26,8 +24,6 @@ def inference_scheme(model_func,
                      append_save_file=False,
                      weight_load_name=None, 
                      save_runtime=False,
-                     fault_gen_param=None,
-                     FT_evaluate_argument=None, 
                      multi_gpu_num=None, 
                      name_tag=None,
                      save_file_add_on=None,
@@ -56,11 +52,6 @@ def inference_scheme(model_func,
     fault_gen_param: Dictionay. Default is None.
         | If is dtype dictionary (fault generation parameter), generate fault dict list inside inference_scheme (slower, consume less memory). 
         | If None, using the fault dict list from model_argument (faster, consume huge memory).
-    fault_param: Dictionay. 
-        The argument for fault generation function.
-    FT_evaluate_argument: Dictionary. Default is None.
-        | The arguments for fault tolerance analysis. (if FT_evaluate is True) Doing fault tolerance analysis.
-        | If None, using model.evaluate for only have loss, accuracy and top-k accuracy.
     multi_gpu_num: Integer or List of String. 
         | If None, using CPU or single GPU inference.
         | If Integer > 1, the number of GPUs use in the inference scheme. 
@@ -132,12 +123,6 @@ def inference_scheme(model_func,
         
         modelaug_tmp=model_argument[scheme_num]
         
-        if fault_gen_param is not None:
-            model_ifmap_fdl,model_ofmap_fdl,model_weight_fdl=generate_model_stuck_fault( **fault_gen_param)
-            modelaug_tmp['ifmap_fault_dict_list']=model_ifmap_fdl
-            modelaug_tmp['ofmap_fault_dict_list']=model_ofmap_fdl
-            modelaug_tmp['weight_fault_dict_list']=model_weight_fdl
-
         if multi_gpu_num is None:
             t = time.time()
             if verbose>6:
@@ -184,58 +169,34 @@ def inference_scheme(model_func,
         else:
             infverbose=0
             
-        if FT_evaluate_argument is not None:
-            if datagen is None:
-                if multi_gpu_num is None:
-                    batch_size=model_argument[scheme_num]['batch_size']
-                else:
-                    batch_size=model_argument[scheme_num]['batch_size']*len(gpu_device)
-                prediction = model.predict(x_test, verbose=infverbose,batch_size=batch_size)
+        if datagen is None:
+            if multi_gpu_num is None:
+                batch_size=model_argument[scheme_num]['batch_size']
             else:
-                prediction = model.predict(datagen, verbose=infverbose,steps=len(datagen))
-            FT_evaluate_argument['prediction']=prediction
-            FT_evaluate_argument['test_label']=y_test
-            test_result = evaluate_FT( **FT_evaluate_argument)
+                batch_size=model_argument[scheme_num]['batch_size']*len(gpu_device)
+            test_result = model.evaluate(x_test, y_test, verbose=infverbose, batch_size=batch_size)
         else:
-            if datagen is None:
-                if multi_gpu_num is None:
-                    batch_size=model_argument[scheme_num]['batch_size']
-                else:
-                    batch_size=model_argument[scheme_num]['batch_size']*len(gpu_device)
-                test_result = model.evaluate(x_test, y_test, verbose=infverbose, batch_size=batch_size)
-            else:
-                test_result = model.evaluate(datagen, verbose=infverbose, steps=len(datagen))
+            test_result = model.evaluate(datagen, verbose=infverbose, steps=len(datagen))
         
         t = time.time()-t
         if verbose>2:
             print('\nruntime: %f s'%t)        
         
         if verbose>1:
-            if FT_evaluate_argument is not None:
-                for key in test_result.keys():
-                    print('Test %s\t:'%key, test_result[key])
-            else:
-                for i in range(len(test_result)):
-                    print('Test %s\t:'%model.metrics_names[i], test_result[i])
+            for i in range(len(test_result)):
+                print('Test %s\t:'%model.metrics_names[i], test_result[i])
             
         if (scheme_num == 0 and not append_save_file) or (append_save_file and not os.path.exists(result_save_file)):
             with open(result_save_file, 'w', newline='') as csvfile:
                 fieldnames=list()
                 test_result_dict=dict()
-                if FT_evaluate_argument is not None:
-                    for key in test_result.keys():
-                        fieldnames.append(key)
-                        test_result_dict[key]=test_result[key]
-                    if save_runtime:
-                        fieldnames.append('runtime')
-                        test_result_dict['runtime']=t
-                else:
-                    for i in range(len(test_result)):
-                        fieldnames.append(model.metrics_names[i])
-                        test_result_dict[model.metrics_names[i]]=test_result[i]
-                    if save_runtime:
-                        fieldnames.append('runtime')
-                        test_result_dict['runtime']=t
+                for i in range(len(test_result)):
+                    fieldnames.append(model.metrics_names[i])
+                    test_result_dict[model.metrics_names[i]]=test_result[i]
+                if save_runtime:
+                    fieldnames.append('runtime')
+                    test_result_dict['runtime']=t
+                        
                 if save_file_add_on is not None:
                     for key in save_file_add_on.keys():
                         fieldnames.append(key)
@@ -247,20 +208,13 @@ def inference_scheme(model_func,
             with open(result_save_file, 'a', newline='') as csvfile:
                 fieldnames=list()
                 test_result_dict=dict()
-                if FT_evaluate_argument is not None:
-                    for key in test_result.keys():
-                        fieldnames.append(key)
-                        test_result_dict[key]=test_result[key]
-                    if save_runtime:
-                        fieldnames.append('runtime')
-                        test_result_dict['runtime']=t
-                else:
-                    for i in range(len(test_result)):
-                        fieldnames.append(model.metrics_names[i])
-                        test_result_dict[model.metrics_names[i]]=test_result[i]
-                    if save_runtime:
-                        fieldnames.append('runtime')
-                        test_result_dict['runtime']=t
+                for i in range(len(test_result)):
+                    fieldnames.append(model.metrics_names[i])
+                    test_result_dict[model.metrics_names[i]]=test_result[i]
+                if save_runtime:
+                    fieldnames.append('runtime')
+                    test_result_dict['runtime']=t
+                        
                 if save_file_add_on is not None:
                     for key in save_file_add_on.keys():
                         fieldnames.append(key)

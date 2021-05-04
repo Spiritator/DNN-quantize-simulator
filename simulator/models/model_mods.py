@@ -13,13 +13,15 @@ import numpy as np
 from ..layers.quantized_layers import QuantizedDistributedConv2D
 from tensorflow.keras.layers import Activation, Add
 
-def exchange_distributed_conv(model,target_layer_num,fault_dict_conversion,split_type,splits,ifmap_fault_dict_list=None,ofmap_fault_dict_list=None,wght_fault_dict_list=None):
+def exchange_distributed_conv(model,
+                              target_layer_num,
+                              split_type,
+                              splits):
     """Swap original DNN model layers to distributed convolution for emulate hardware partial sum.
 
     # Arguments
         model: Keras model. The model wanted to be swapped.
         target_layer_num: Integer or List. The layers that will be swapped by distributed convolution layer.
-        fault_dict_conversion: Bool. Whether convert the original layer fault dict to distributed convolution or not.
         
         split_type: String or List of String. Choose from 'channel', 'k_height' (kernel_height), 'k_width' (kernel_width), 'k_seq' (kernel_sequential).
             'k_seq' can't coexist with 'k_height' or 'k_width'.
@@ -40,9 +42,6 @@ def exchange_distributed_conv(model,target_layer_num,fault_dict_conversion,split
             List length of first level is the number of target layers.
             List length of second level is the number of split types permute according to the split_type list order.
             
-        ifmap_fault_dict_list: List of Dictionarys. The fault dictionary list for input feature maps.
-        ofmap_fault_dict_list: List of Dictionarys. The fault dictionary list for output feature maps.
-        wght_fault_dict_list: List of Dictionarys. The fault dictionary list for weights.
 
     # Returns
         A Model, result of distributed convolution swap.
@@ -57,18 +56,7 @@ def exchange_distributed_conv(model,target_layer_num,fault_dict_conversion,split
         if i in target_layer_num:
             original_layer=layers[i]
             splits_tmp=splits[target_layer_num.index(i)]
-            
-            if fault_dict_conversion:
-                ifmap_fault_dict_list=original_layer.ifmap_sa_fault_injection
-                wght_fault_dict_list=original_layer.weight_sa_fault_injection
-                if original_layer.ofmap_sa_fault_injection is None:
-                    ofmap_fault_dict_list=None
-                else:
-                    if isinstance(splits_tmp,int):
-                        ofmap_fault_dict_list=[original_layer.ofmap_sa_fault_injection for i in range(splits_tmp)]
-                    elif isinstance(splits_tmp,list):
-                        ofmap_fault_dict_list=[original_layer.ofmap_sa_fault_injection for i in range(len(splits_tmp))]
-            
+                        
             x = QuantizedDistributedConv2D(filters=original_layer.filters,
                                            split_type=split_type,
                                            splits=splits_tmp,
@@ -78,9 +66,6 @@ def exchange_distributed_conv(model,target_layer_num,fault_dict_conversion,split
                                            strides=original_layer.strides,
                                            use_bias=original_layer.use_bias,
                                            name=original_layer.name,
-                                           ifmap_sa_fault_injection=ifmap_fault_dict_list,
-                                           ofmap_sa_fault_injection=ofmap_fault_dict_list,
-                                           weight_sa_fault_injection=wght_fault_dict_list,
                                            quant_mode=original_layer.quant_mode)(x)
             x = Add()(x)
             x = Activation(original_layer.activation)(x)

@@ -14,8 +14,6 @@ from simulator.utils_tool.dataset_setup import dataset_setup
 from simulator.utils_tool.confusion_matrix import show_confusion_matrix
 from tensorflow.keras.losses import categorical_crossentropy
 from simulator.metrics.topk_metrics import top5_acc
-from simulator.metrics.FT_metrics import acc_loss, relative_acc, pred_miss, top5_pred_miss, conf_score_vary_10, conf_score_vary_50
-from simulator.inference.evaluate import evaluate_FT
 
 import time
 
@@ -84,19 +82,21 @@ print('dataset ready')
 t = time.time()
 print('evaluating...')
 
-prediction = parallel_model.predict(datagen, verbose=1, steps=len(datagen))
-#prediction = model.predict(datagen, verbose=1, steps=len(datagen))
-test_result = evaluate_FT('mobilenet',prediction=prediction,test_label=to_categorical(datagen.classes,1000),loss_function=categorical_crossentropy,metrics=['accuracy',top5_acc,acc_loss,relative_acc,pred_miss,top5_pred_miss,conf_score_vary_10,conf_score_vary_50],fuseBN=True,setsize=set_size)
+test_result = parallel_model.predict(datagen, verbose=1, steps=len(datagen))
 
 t = time.time()-t
 print('\nruntime: %f s'%t)
-for key in test_result.keys():
-    print('Test %s\t:'%key, test_result[key])
+
+print('\nLoss: %f'%test_result[0])
+print('Top1 Accuracy: %f'%test_result[1])
+print('Top5 Accuracy: %f'%test_result[2])
 
 #%% draw confusion matrix
 
-#print('\n')
+#prediction = parallel_model.predict(datagen, verbose=1, steps=len(datagen))
 #prediction = model.predict(datagen, verbose=1, steps=len(datagen))
+
+#print('\n')
 #prediction = np.argmax(prediction, axis=1)
 #
 #show_confusion_matrix(datagen.classes,prediction,datagen.class_indices.keys(),'Confusion Matrix',figsize=(10,8),normalize=False,big_matrix=True)
